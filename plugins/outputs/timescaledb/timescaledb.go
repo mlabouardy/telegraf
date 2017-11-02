@@ -1,6 +1,9 @@
 package timescaledb
 
 import (
+	"database/sql"
+	"fmt"
+
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/plugins/outputs"
 )
@@ -11,6 +14,7 @@ type TimescaleDB struct {
 	Username string
 	Password string
 	Database string
+	Client   *sql.DB
 }
 
 var sampleConfig = `
@@ -30,11 +34,24 @@ var sampleConfig = `
 
 // Connect initiates the connection to TimescaleDB server
 func (t *TimescaleDB) Connect() error {
+	if t.Host == "" || t.Database == "" {
+		return fmt.Errorf("TimescaleDB host or database is not defined")
+	}
 
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", t.Host, t.Port, t.Username, t.Password, t.Database)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		return fmt.Errorf("TimescaleDB connection failed: %s", err)
+	}
+
+	t.Client = db
+
+	return nil
 }
 
 // Close will terminate the session to the backend, returning error if an issue arises
 func (t *TimescaleDB) Close() error {
+	t.Client.Close()
 	return nil
 }
 
@@ -48,14 +65,16 @@ func (t *TimescaleDB) SampleConfig() string {
 	return sampleConfig
 }
 
-func (t *TimescaleDB) Write(metrics []Metric) string {
+func (t *TimescaleDB) Write(metrics []telegraf.Metric) error {
 	if len(metrics) == 0 {
 		return nil
 	}
 
 	for _, metric := range metrics {
-
+		fmt.Println(metric.Fields())
 	}
+
+	return nil
 }
 
 func init() {
