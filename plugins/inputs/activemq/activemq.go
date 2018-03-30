@@ -137,7 +137,7 @@ func (a *ActiveMQ) GatherTopicsMetrics(acc telegraf.Accumulator, topics Topics) 
 		records := make(map[string]interface{})
 		tags := make(map[string]string)
 
-		tags["name"] = topic.Name
+		tags["name"] = strings.TrimSpace(topic.Name)
 
 		records["size"] = topic.Stats.Size
 		records["consumer_count"] = topic.Stats.ConsumerCount
